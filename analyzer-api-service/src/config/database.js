@@ -15,9 +15,11 @@ const {
   DB_POOL_ACQUIRE = '30000',
   DB_POOL_IDLE = '10000',
   NODE_ENV = 'development',
+  DATABASE_URL,
 } = process.env;
 
 const isTest = NODE_ENV === 'test';
+const isProduction = NODE_ENV === 'production';
 
 const sequelizeOptions = isTest
   ? {
@@ -26,7 +28,7 @@ const sequelizeOptions = isTest
       logging: false,
     }
   : {
-      dialect: 'mysql',
+      dialect: 'postgres',
       host: DB_HOST,
       port: parseInt(DB_PORT, 10),
       logging: (sql, timing) => {
@@ -38,13 +40,13 @@ const sequelizeOptions = isTest
         acquire: parseInt(DB_POOL_ACQUIRE, 10),
         idle: parseInt(DB_POOL_IDLE, 10),
       },
-      dialectOptions: {
-        charset: 'utf8mb4',
-        connectTimeout: 10000,
-      },
+      dialectOptions: isProduction ? {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
+      } : {},
       define: {
-        charset: 'utf8mb4',
-        collate: 'utf8mb4_unicode_ci',
         timestamps: true,
         underscored: true,
       },
@@ -52,7 +54,9 @@ const sequelizeOptions = isTest
 
 const sequelize = isTest
   ? new Sequelize(sequelizeOptions)
-  : new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, sequelizeOptions);
+  : DATABASE_URL 
+    ? new Sequelize(DATABASE_URL, sequelizeOptions)
+    : new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, sequelizeOptions);
 
 /**
  * Test database connectivity with retry logic

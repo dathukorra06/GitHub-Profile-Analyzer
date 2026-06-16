@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "name": "github-profile-analyzer",
+  "framework": "vite",
+  "buildCommand": "cd analyzer-web-client && npm install && npm run build",
+  "outputDirectory": "analyzer-web-client/dist",
+  "installCommand": "npm install"
+}

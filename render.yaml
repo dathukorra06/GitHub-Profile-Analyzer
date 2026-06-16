@@ -16,13 +16,12 @@ services:
         generateValue: true
       - key: GITHUB_TOKEN
         sync: false
-      - key: DB_HOST
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_NAME
-        value: github_analyzer
-      - key: DB_PORT
-        value: 3306
+      - key: DATABASE_URL
+        fromDatabase:
+          name: github-analyzer-db
+          property: connectionString
+
+  - type: psql
+    name: github-analyzer-db
+    plan: free
+    postgresMajorVersion: 15
