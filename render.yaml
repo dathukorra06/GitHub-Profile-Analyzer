@@ -21,7 +21,7 @@ services:
           name: github-analyzer-db
           property: connectionString
 
-  - type: psql
-    name: github-analyzer-db
+databases:
+  - name: github-analyzer-db
     plan: free
     postgresMajorVersion: 15
