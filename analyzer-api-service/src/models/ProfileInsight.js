@@ -107,6 +107,24 @@ const ProfileInsight = sequelize.define(
       defaultValue: null,
       comment: 'Ratio of forks to total repos (0-1)',
     },
+    mostStarredRepo: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
+      comment: '{ name, stars, url } of the most starred repository',
+    },
+    mostForkedRepo: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: null,
+      comment: '{ name, forks, url } of the most forked repository',
+    },
+    openSourceLicenseCount: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Number of repos with a recognized open-source license',
+    },
   },
   {
     tableName: 'profile_insights',

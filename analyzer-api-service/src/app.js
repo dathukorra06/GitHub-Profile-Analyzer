@@ -101,6 +101,25 @@ const swaggerOptions = {
             topicDistribution: { type: 'object', additionalProperties: { type: 'integer' } },
             hasReadmeCount: { type: 'integer' },
             forkRatio: { type: 'number', nullable: true },
+            mostStarredRepo: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                name: { type: 'string' },
+                stars: { type: 'integer' },
+                url: { type: 'string', format: 'uri' },
+              },
+            },
+            mostForkedRepo: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                name: { type: 'string' },
+                forks: { type: 'integer' },
+                url: { type: 'string', format: 'uri' },
+              },
+            },
+            openSourceLicenseCount: { type: 'integer' },
           },
         },
         ErrorResponse: {

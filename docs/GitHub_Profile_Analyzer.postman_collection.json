@@ -1,32 +1,39 @@
 {
   "info": {
-    "_postman_id": "b1b7a2e9-4e78-4a92-9013-ec8c792945d8",
-    "name": "GitHub Profile Analyzer",
-    "description": "API collection for the GitHub Profile Analyzer backend service. Provides endpoints for fetching, storing, and analyzing GitHub user data.",
+    "_postman_id": "github-profile-analyzer-v2",
+    "name": "GitHub Profile Analyzer API",
+    "description": "Complete test suite for the GitHub Profile Analyzer REST API.\n\n## Setup\n1. Set the `baseUrl` variable to your server URL\n2. Set the `apiKey` variable to your API secret key\n3. After running 'Analyze Profile', copy the `githubId` from the response and set the `githubId` variable\n\n## Endpoints\n- POST /api/profiles/analyze — Analyze a GitHub username\n- GET  /api/profiles       — List profiles (paginated, filterable)\n- GET  /api/profiles/:id   — Get single profile + insights\n- PUT  /api/profiles/:id/refresh — Re-analyze existing profile\n- DELETE /api/profiles/:id — Delete profile and insights\n- GET  /health             — Service health check",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://github-analyzer-api-ye8b.onrender.com",
+      "description": "Change to http://localhost:3000 for local development"
+    },
+    {
+      "key": "apiKey",
+      "value": "YOUR_API_KEY_HERE",
+      "description": "Your API_SECRET_KEY value from the .env file or Render dashboard"
+    },
+    {
+      "key": "githubId",
+      "value": "1024025",
+      "description": "GitHub numeric user ID — set this after running 'Analyze Profile'"
+    }
+  ],
   "item": [
     {
       "name": "Health Check",
       "request": {
         "method": "GET",
-        "header": [
-          {
-            "key": "X-API-Key",
-            "value": "{{API_KEY}}",
-            "type": "text"
-          }
-        ],
+        "header": [],
         "url": {
-          "raw": "{{BASE_URL}}/health",
-          "host": [
-            "{{BASE_URL}}"
-          ],
-          "path": [
-            "health"
-          ]
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
         },
-        "description": "Returns the health status of the API."
+        "description": "Check API and database health. No authentication required. Returns service status and DB latency."
       },
       "response": []
     },
@@ -36,85 +43,104 @@
         "method": "POST",
         "header": [
           {
-            "key": "X-API-Key",
-            "value": "{{API_KEY}}",
-            "type": "text"
+            "key": "Content-Type",
+            "value": "application/json"
           },
           {
-            "key": "Content-Type",
-            "value": "application/json",
-            "type": "text"
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
           }
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"username\": \"torvalds\"\n}"
+          "raw": "{\n  \"username\": \"torvalds\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
         },
         "url": {
-          "raw": "{{BASE_URL}}/api/profiles/analyze",
-          "host": [
-            "{{BASE_URL}}"
-          ],
-          "path": [
-            "api",
-            "profiles",
-            "analyze"
-          ]
+          "raw": "{{baseUrl}}/api/profiles/analyze",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "profiles", "analyze"]
         },
-        "description": "Analyzes a given GitHub username. Fetches their data from the GitHub API, calculates insights, and persists it in the database."
+        "description": "Fetches a GitHub user profile and their public repositories, computes insights (stars, forks, language distribution, most starred/forked repo, open source license count, etc.), and persists all data in MySQL.\n\nReturns 201 on first analysis, 200 on re-analysis.\n\nRate limit: 20 requests per 15 minutes per IP."
       },
       "response": []
     },
     {
-      "name": "List Profiles",
+      "name": "List Profiles — Default",
       "request": {
         "method": "GET",
         "header": [
           {
             "key": "X-API-Key",
-            "value": "{{API_KEY}}",
-            "type": "text"
+            "value": "{{apiKey}}"
           }
         ],
         "url": {
-          "raw": "{{BASE_URL}}/api/profiles?page=1&limit=10",
-          "host": [
-            "{{BASE_URL}}"
-          ],
-          "path": [
-            "api",
-            "profiles"
-          ],
+          "raw": "{{baseUrl}}/api/profiles?page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "profiles"],
           "query": [
-            {
-              "key": "page",
-              "value": "1",
-              "description": "Page number for pagination"
-            },
-            {
-              "key": "limit",
-              "value": "10",
-              "description": "Number of records per page"
-            },
-            {
-              "key": "sortBy",
-              "value": "createdAt",
-              "description": "Field to sort by (e.g. createdAt, followerCount)"
-            },
-            {
-              "key": "sortOrder",
-              "value": "DESC",
-              "description": "ASC or DESC"
-            },
-            {
-              "key": "language",
-              "value": "JavaScript",
-              "description": "(Optional) Filter by top programming language",
-              "disabled": true
-            }
+            { "key": "page", "value": "1", "description": "Page number (default: 1)" },
+            { "key": "limit", "value": "10", "description": "Results per page (max: 100)" }
           ]
         },
-        "description": "Retrieves a paginated list of all analyzed profiles."
+        "description": "Returns a paginated list of all analyzed profiles with their insights embedded."
+      },
+      "response": []
+    },
+    {
+      "name": "List Profiles — Filter by Language",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/profiles?language=JavaScript&sortBy=followerCount&sortOrder=DESC&page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "profiles"],
+          "query": [
+            { "key": "language", "value": "JavaScript", "description": "Filter by top programming language" },
+            { "key": "sortBy", "value": "followerCount", "description": "Sort field: lastAnalyzedAt | followerCount | totalStarsEarned | accountCreationDate" },
+            { "key": "sortOrder", "value": "DESC", "description": "ASC or DESC" },
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        },
+        "description": "Filter profiles by top programming language, sorted by follower count descending."
+      },
+      "response": []
+    },
+    {
+      "name": "List Profiles — Filter by Followers & Date",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/profiles?minFollowers=1000&maxFollowers=500000&createdAfter=2008-01-01&sortBy=totalStarsEarned&sortOrder=DESC",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "profiles"],
+          "query": [
+            { "key": "minFollowers", "value": "1000" },
+            { "key": "maxFollowers", "value": "500000" },
+            { "key": "createdAfter", "value": "2008-01-01", "description": "ISO 8601 date" },
+            { "key": "sortBy", "value": "totalStarsEarned" },
+            { "key": "sortOrder", "value": "DESC" }
+          ]
+        },
+        "description": "Filter profiles by follower range and account creation date, sorted by total stars."
       },
       "response": []
     },
@@ -125,28 +151,15 @@
         "header": [
           {
             "key": "X-API-Key",
-            "value": "{{API_KEY}}",
-            "type": "text"
+            "value": "{{apiKey}}"
           }
         ],
         "url": {
-          "raw": "{{BASE_URL}}/api/profiles/:githubId",
-          "host": [
-            "{{BASE_URL}}"
-          ],
-          "path": [
-            "api",
-            "profiles",
-            ":githubId"
-          ],
-          "variable": [
-            {
-              "key": "githubId",
-              "value": "1024025"
-            }
-          ]
+          "raw": "{{baseUrl}}/api/profiles/{{githubId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "profiles", "{{githubId}}"]
         },
-        "description": "Fetches a specific profile and its insights from the database using their numeric GitHub ID."
+        "description": "Retrieves the full profile metadata and all computed insights for a single user by their GitHub numeric ID.\n\nSet the `githubId` collection variable to the ID returned from the Analyze endpoint."
       },
       "response": []
     },
@@ -157,29 +170,15 @@
         "header": [
           {
             "key": "X-API-Key",
-            "value": "{{API_KEY}}",
-            "type": "text"
+            "value": "{{apiKey}}"
           }
         ],
         "url": {
-          "raw": "{{BASE_URL}}/api/profiles/:githubId/refresh",
-          "host": [
-            "{{BASE_URL}}"
-          ],
-          "path": [
-            "api",
-            "profiles",
-            ":githubId",
-            "refresh"
-          ],
-          "variable": [
-            {
-              "key": "githubId",
-              "value": "1024025"
-            }
-          ]
+          "raw": "{{baseUrl}}/api/profiles/{{githubId}}/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "profiles", "{{githubId}}", "refresh"]
         },
-        "description": "Forces a fresh data pull from the GitHub API for an existing user, updating their database record."
+        "description": "Re-fetches the latest data from GitHub for an existing stored profile. Invalidates the LRU cache for this user before fetching to guarantee fresh data. Updates all insight fields in the database using a transaction."
       },
       "response": []
     },
@@ -190,62 +189,31 @@
         "header": [
           {
             "key": "X-API-Key",
-            "value": "{{API_KEY}}",
-            "type": "text"
+            "value": "{{apiKey}}"
           }
         ],
         "url": {
-          "raw": "{{BASE_URL}}/api/profiles/:githubId",
-          "host": [
-            "{{BASE_URL}}"
-          ],
-          "path": [
-            "api",
-            "profiles",
-            ":githubId"
-          ],
-          "variable": [
-            {
-              "key": "githubId",
-              "value": "1024025"
-            }
-          ]
+          "raw": "{{baseUrl}}/api/profiles/{{githubId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "profiles", "{{githubId}}"]
         },
-        "description": "Deletes a profile and its associated insights from the database."
+        "description": "Permanently deletes a stored profile and all its associated insights. The CASCADE constraint on the database foreign key ensures the profile_insights row is also deleted automatically.\n\nReturns 204 No Content on success."
       },
       "response": []
-    }
-  ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
     },
     {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
-    }
-  ],
-  "variable": [
-    {
-      "key": "BASE_URL",
-      "value": "http://localhost:3000",
-      "type": "string"
-    },
-    {
-      "key": "API_KEY",
-      "value": "fa82efa9bc7e4f5a8a5664084b84852586760b76fdbb52d2660fb85a96ddec53",
-      "type": "string"
+      "name": "Swagger API Docs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/docs",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "docs"]
+        },
+        "description": "Opens the interactive Swagger UI (OpenAPI 3.0) in the browser. All endpoints, request schemas, and response schemas are documented here."
+      },
+      "response": []
     }
   ]
 }

@@ -135,6 +135,50 @@ function computeForkRatio(repos) {
 }
 
 /**
+ * Find the repository with the highest star count.
+ * @param {Array<Object>} repos
+ * @returns {{ name: string, stars: number, url: string }|null}
+ */
+function computeMostStarredRepo(repos) {
+  if (!repos || repos.length === 0) return null;
+  const sorted = [...repos].sort(
+    (a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0),
+  );
+  const top = sorted[0];
+  if (!top || (top.stargazers_count || 0) === 0) return null;
+  return { name: top.name, stars: top.stargazers_count || 0, url: top.html_url };
+}
+
+/**
+ * Find the repository with the highest fork count.
+ * @param {Array<Object>} repos
+ * @returns {{ name: string, forks: number, url: string }|null}
+ */
+function computeMostForkedRepo(repos) {
+  if (!repos || repos.length === 0) return null;
+  const sorted = [...repos].sort(
+    (a, b) => (b.forks_count || 0) - (a.forks_count || 0),
+  );
+  const top = sorted[0];
+  if (!top || (top.forks_count || 0) === 0) return null;
+  return { name: top.name, forks: top.forks_count || 0, url: top.html_url };
+}
+
+/**
+ * Count the number of repos that have a recognized open-source license.
+ * GitHub exposes this via repo.license (non-null when a recognized license exists).
+ * Excludes GitHub's generic 'other' placeholder.
+ * @param {Array<Object>} repos
+ * @returns {number}
+ */
+function computeOpenSourceLicenseCount(repos) {
+  if (!repos || repos.length === 0) return 0;
+  return repos.filter(
+    (repo) => repo.license && repo.license.key && repo.license.key !== 'other',
+  ).length;
+}
+
+/**
  * Master function: compute all insights from raw GitHub API data.
  * @param {Object} userProfile - raw GitHub /users/:username response
  * @param {Array<Object>} repos - raw GitHub /users/:username/repos response
@@ -150,6 +194,9 @@ function computeAllInsights(userProfile, repos) {
   const mostActiveCommitYear = computeMostActiveYear(repos);
   const hasReadmeCount = computeHasReadmeCount(repos);
   const forkRatio = computeForkRatio(repos);
+  const mostStarredRepo = computeMostStarredRepo(repos);
+  const mostForkedRepo = computeMostForkedRepo(repos);
+  const openSourceLicenseCount = computeOpenSourceLicenseCount(repos);
 
   return {
     githubId: userProfile.id,
@@ -165,6 +212,9 @@ function computeAllInsights(userProfile, repos) {
     topicDistribution,
     hasReadmeCount,
     forkRatio,
+    mostStarredRepo,
+    mostForkedRepo,
+    openSourceLicenseCount,
   };
 }
 
@@ -178,5 +228,8 @@ module.exports = {
   computeMostActiveYear,
   computeHasReadmeCount,
   computeForkRatio,
+  computeMostStarredRepo,
+  computeMostForkedRepo,
+  computeOpenSourceLicenseCount,
   computeAllInsights,
 };

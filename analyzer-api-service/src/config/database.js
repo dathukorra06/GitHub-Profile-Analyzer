@@ -28,7 +28,8 @@ const sequelizeOptions = isTest
       logging: false,
     }
   : {
-      dialect: 'postgres',
+      dialect: 'mysql',
+      dialectModule: require('mysql2'),
       host: DB_HOST,
       port: parseInt(DB_PORT, 10),
       logging: (sql, timing) => {

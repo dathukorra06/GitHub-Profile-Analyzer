@@ -10,30 +10,37 @@ const {
   computeMostActiveYear,
   computeHasReadmeCount,
   computeForkRatio,
+  computeMostStarredRepo,
+  computeMostForkedRepo,
+  computeOpenSourceLicenseCount,
   computeAllInsights,
 } = require('../../src/utils/insights');
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 const mockRepos = [
   {
-    id: 1, language: 'JavaScript', stargazers_count: 100, forks_count: 20,
+    id: 1, name: 'js-project', language: 'JavaScript', stargazers_count: 100, forks_count: 20,
     pushed_at: '2023-06-01T00:00:00Z', fork: false, description: 'A JS project',
-    topics: ['api', 'nodejs'],
+    topics: ['api', 'nodejs'], html_url: 'https://github.com/testuser/js-project',
+    license: { key: 'mit', name: 'MIT License' },
   },
   {
-    id: 2, language: 'JavaScript', stargazers_count: 50, forks_count: 10,
+    id: 2, name: 'another-js', language: 'JavaScript', stargazers_count: 50, forks_count: 10,
     pushed_at: '2022-03-15T00:00:00Z', fork: false, description: 'Another JS repo',
-    topics: ['api', 'react'],
+    topics: ['api', 'react'], html_url: 'https://github.com/testuser/another-js',
+    license: { key: 'apache-2.0', name: 'Apache 2.0' },
   },
   {
-    id: 3, language: 'Python', stargazers_count: 200, forks_count: 40,
+    id: 3, name: 'ml-python', language: 'Python', stargazers_count: 200, forks_count: 40,
     pushed_at: '2023-11-20T00:00:00Z', fork: true, description: '',
-    topics: ['machine-learning'],
+    topics: ['machine-learning'], html_url: 'https://github.com/testuser/ml-python',
+    license: { key: 'other', name: 'Other' },
   },
   {
-    id: 4, language: null, stargazers_count: 5, forks_count: 1,
+    id: 4, name: 'dotfiles', language: null, stargazers_count: 5, forks_count: 1,
     pushed_at: '2021-01-10T00:00:00Z', fork: false, description: 'Config files',
-    topics: [],
+    topics: [], html_url: 'https://github.com/testuser/dotfiles',
+    license: null,
   },
 ];
 
@@ -204,6 +211,70 @@ describe('computeForkRatio', () => {
   });
 });
 
+// ── computeMostStarredRepo ────────────────────────────────────────────────────
+describe('computeMostStarredRepo', () => {
+  it('returns the repo with the highest star count', () => {
+    const result = computeMostStarredRepo(mockRepos);
+    expect(result).toEqual({
+      name: 'ml-python',
+      stars: 200,
+      url: 'https://github.com/testuser/ml-python',
+    });
+  });
+
+  it('returns null for empty repos', () => {
+    expect(computeMostStarredRepo([])).toBeNull();
+  });
+
+  it('returns null when all repos have zero stars', () => {
+    const repos = [{ name: 'a', stargazers_count: 0, html_url: 'http://x' }];
+    expect(computeMostStarredRepo(repos)).toBeNull();
+  });
+});
+
+// ── computeMostForkedRepo ─────────────────────────────────────────────────────
+describe('computeMostForkedRepo', () => {
+  it('returns the repo with the highest fork count', () => {
+    const result = computeMostForkedRepo(mockRepos);
+    expect(result).toEqual({
+      name: 'ml-python',
+      forks: 40,
+      url: 'https://github.com/testuser/ml-python',
+    });
+  });
+
+  it('returns null for empty repos', () => {
+    expect(computeMostForkedRepo([])).toBeNull();
+  });
+
+  it('returns null when all repos have zero forks', () => {
+    const repos = [{ name: 'a', forks_count: 0, html_url: 'http://x' }];
+    expect(computeMostForkedRepo(repos)).toBeNull();
+  });
+});
+
+// ── computeOpenSourceLicenseCount ─────────────────────────────────────────────
+describe('computeOpenSourceLicenseCount', () => {
+  it('counts repos with recognized OSS licenses', () => {
+    // js-project: MIT ✅, another-js: Apache 2.0 ✅, ml-python: other ❌, dotfiles: null ❌
+    expect(computeOpenSourceLicenseCount(mockRepos)).toBe(2);
+  });
+
+  it('returns 0 for empty repos', () => {
+    expect(computeOpenSourceLicenseCount([])).toBe(0);
+  });
+
+  it('returns 0 when all repos have null license', () => {
+    const repos = [{ license: null }, { license: null }];
+    expect(computeOpenSourceLicenseCount(repos)).toBe(0);
+  });
+
+  it('excludes repos with license.key = "other"', () => {
+    const repos = [{ license: { key: 'other', name: 'Other' } }];
+    expect(computeOpenSourceLicenseCount(repos)).toBe(0);
+  });
+});
+
 // ── computeAllInsights ────────────────────────────────────────────────────────
 describe('computeAllInsights', () => {
   it('returns a complete insights object with all required fields', () => {
@@ -219,11 +290,14 @@ describe('computeAllInsights', () => {
       topProgrammingLanguage: 'JavaScript',
       mostActiveCommitYear: 2023,
       forkRatio: 0.25,
+      openSourceLicenseCount: 2,
     });
 
     expect(result.languageDistribution).toEqual({ JavaScript: 2, Python: 1 });
     expect(result.topicDistribution).toEqual({ api: 2, nodejs: 1, react: 1, 'machine-learning': 1 });
     expect(typeof result.averageRepositoryAgeDays).toBe('number');
+    expect(result.mostStarredRepo).toMatchObject({ name: 'ml-python', stars: 200 });
+    expect(result.mostForkedRepo).toMatchObject({ name: 'ml-python', forks: 40 });
   });
 
   it('handles user with no repos gracefully', () => {
@@ -231,5 +305,8 @@ describe('computeAllInsights', () => {
     expect(result.totalStarsEarned).toBe(0);
     expect(result.topProgrammingLanguage).toBeNull();
     expect(result.forkRatio).toBeNull();
+    expect(result.mostStarredRepo).toBeNull();
+    expect(result.mostForkedRepo).toBeNull();
+    expect(result.openSourceLicenseCount).toBe(0);
   });
 });
