@@ -1,6 +1,15 @@
 # GitHub Profile Analyzer
 
-A full-stack web application designed to retrieve, process, and beautifully visualize comprehensive insights from public GitHub profiles. 
+A full-stack web application designed to retrieve, process, and beautifully visualize comprehensive insights from public GitHub profiles.
+
+## 🚀 Live Deployment Links
+
+| Service | URL |
+|---------|-----|
+| **Frontend (Vercel)** | https://github-profile-analyzer-cyan.vercel.app |
+| **Backend API (Render)** | https://github-analyzer-api-ye8b.onrender.com |
+
+> **Note**: The Render free-tier backend may take 30–60 seconds to respond on the first request after a period of inactivity (cold start). Please wait a moment and retry.
 
 ## Monorepo Structure
 This repository contains two main modules:
@@ -14,7 +23,7 @@ To run this project locally, your system must meet the following minimum require
 - **Operating System**: Windows, macOS, or Linux
 - **Node.js**: v18.x (LTS) or higher
 - **Package Manager**: npm v9.x or higher
-- **Database**: MySQL 8.0+ running locally (or remotely) with InnoDB support
+- **Database**: PostgreSQL 15+ running locally, OR use the provided `DATABASE_URL` connection string from Render
 
 ---
 
@@ -46,16 +55,19 @@ API_KEY=your_secret_api_key_here
 # GitHub Personal Access Token (Raises API rate limit from 60 to 5000 req/hr)
 GITHUB_TOKEN=your_github_pat_here
 
-# MySQL Database Configuration
+# PostgreSQL Database - use either DATABASE_URL (preferred) or individual fields
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+
+# OR individual fields:
 DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_mysql_password
+DB_USER=postgres
+DB_PASSWORD=your_password
 DB_NAME=github_analyzer
-DB_PORT=3306
+DB_PORT=5432
 ```
 
 > **Note**: The frontend requires a `.env.local` file inside `analyzer-web-client/` containing:
-> `VITE_API_BASE_URL=http://localhost:3000`
+> `VITE_API_BASE_URL=http://localhost:3000/api`
 > `VITE_API_KEY=your_secret_api_key_here`
 
 ---
@@ -75,30 +87,45 @@ If you prefer to start them individually:
 ---
 
 ## 5. Local Access & Project Testing
-1. **Database Setup**: Ensure MySQL is running. The backend uses Sequelize `alter: true`, so it will automatically create the required tables (`profiles` and `profile_insights`) upon startup. (Or you can import the SQL dump located at `database/init.sql`).
+1. **Database Setup**: Ensure PostgreSQL is running. The backend uses Sequelize `alter: true`, so it will automatically create the required tables (`profiles` and `profile_insights`) upon startup.
 2. **Access the Frontend**: Open your browser and navigate to **[http://localhost:5173](http://localhost:5173)**.
-3. **Using the App**: Enter a valid GitHub username (e.g., `torvalds`) in the search bar and click "Analyze". The app will fetch the data from GitHub, save it to MySQL, and display the beautiful insights dashboard.
+3. **Using the App**: Enter a valid GitHub username (e.g., `torvalds`) in the search bar and click "Analyze". The app will fetch the data from GitHub, save it to the database, and display the insights dashboard.
 4. **API Testing**: You can import the Postman collection located at `docs/GitHub_Profile_Analyzer.postman_collection.json` to manually test the REST API endpoints.
 
 ---
 
-## 6. Core Deployment Processes
+## 6. Deployed Infrastructure
 
-### Deploying the Frontend (Vercel)
-1. Push this repository to GitHub.
-2. Log into [Vercel](https://vercel.com) and click **Add New Project**.
-3. Import your GitHub repository.
-4. **CRITICAL**: In the Vercel project configuration, set the **Root Directory** to `analyzer-web-client`.
-5. Add the Environment Variables (`VITE_API_BASE_URL` pointing to your Render backend URL, and `VITE_API_KEY`).
-6. Click **Deploy**.
+### Frontend — Vercel
+- **Live URL**: https://github-profile-analyzer-cyan.vercel.app
+- **Platform**: Vercel
+- **Build**: Vite React SPA
+- **Config**: `vercel.json` in root
+- **Env Vars Set**:
+  - `VITE_API_BASE_URL=https://github-analyzer-api-ye8b.onrender.com/api`
 
-### Deploying the Backend (Render)
-1. Log into [Render](https://render.com) and click **New+** -> **Web Service**.
-2. Connect your GitHub repository.
-3. The root directory contains a `render.yaml` file, so Render can automatically detect the Infrastructure-as-Code configuration.
-4. If setting up manually:
-   - **Root Directory**: `analyzer-api-service`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-5. Ensure you configure your database environment variables (`DB_HOST`, `DB_PASSWORD`, etc.) to point to a production MySQL instance (like Aiven or Render's PostgreSQL if migrated).
-6. **CORS Configuration**: Make sure to update the `CORS_ORIGIN` environment variable in Render to match your Vercel frontend domain (e.g., `https://your-frontend.vercel.app`).
+### Backend — Render
+- **Live URL**: https://github-analyzer-api-ye8b.onrender.com
+- **Platform**: Render (Free Tier Web Service)
+- **Database**: PostgreSQL 15 on Render (`github_analyzer_ej3l`)
+- **Region**: Oregon
+- **Build Command**: `npm install`
+- **Start Command**: `node server.js`
+
+### CORS Configuration
+The backend is configured with `CORS_ORIGIN=*` to allow the Vercel frontend to make requests. In production, you can tighten this to `https://github-profile-analyzer-cyan.vercel.app`.
+
+---
+
+## 7. API Health Check
+
+Test that the backend is live:
+```bash
+curl https://github-analyzer-api-ye8b.onrender.com/health
+```
+
+Test an analysis (replace `YOUR_API_KEY`):
+```bash
+curl -H "x-api-key: YOUR_API_KEY" \
+  https://github-analyzer-api-ye8b.onrender.com/api/profiles/torvalds
+```
