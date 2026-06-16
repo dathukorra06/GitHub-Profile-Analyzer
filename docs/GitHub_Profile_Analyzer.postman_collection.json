@@ -1,0 +1,251 @@
+{
+  "info": {
+    "_postman_id": "b1b7a2e9-4e78-4a92-9013-ec8c792945d8",
+    "name": "GitHub Profile Analyzer",
+    "description": "API collection for the GitHub Profile Analyzer backend service. Provides endpoints for fetching, storing, and analyzing GitHub user data.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{API_KEY}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/health",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Returns the health status of the API."
+      },
+      "response": []
+    },
+    {
+      "name": "Analyze Profile",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{API_KEY}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"torvalds\"\n}"
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/api/profiles/analyze",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "profiles",
+            "analyze"
+          ]
+        },
+        "description": "Analyzes a given GitHub username. Fetches their data from the GitHub API, calculates insights, and persists it in the database."
+      },
+      "response": []
+    },
+    {
+      "name": "List Profiles",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{API_KEY}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/api/profiles?page=1&limit=10",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "profiles"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1",
+              "description": "Page number for pagination"
+            },
+            {
+              "key": "limit",
+              "value": "10",
+              "description": "Number of records per page"
+            },
+            {
+              "key": "sortBy",
+              "value": "createdAt",
+              "description": "Field to sort by (e.g. createdAt, followerCount)"
+            },
+            {
+              "key": "sortOrder",
+              "value": "DESC",
+              "description": "ASC or DESC"
+            },
+            {
+              "key": "language",
+              "value": "JavaScript",
+              "description": "(Optional) Filter by top programming language",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "Retrieves a paginated list of all analyzed profiles."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Profile by GitHub ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{API_KEY}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/api/profiles/:githubId",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "profiles",
+            ":githubId"
+          ],
+          "variable": [
+            {
+              "key": "githubId",
+              "value": "1024025"
+            }
+          ]
+        },
+        "description": "Fetches a specific profile and its insights from the database using their numeric GitHub ID."
+      },
+      "response": []
+    },
+    {
+      "name": "Refresh Profile",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{API_KEY}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/api/profiles/:githubId/refresh",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "profiles",
+            ":githubId",
+            "refresh"
+          ],
+          "variable": [
+            {
+              "key": "githubId",
+              "value": "1024025"
+            }
+          ]
+        },
+        "description": "Forces a fresh data pull from the GitHub API for an existing user, updating their database record."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Profile",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "X-API-Key",
+            "value": "{{API_KEY}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{BASE_URL}}/api/profiles/:githubId",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "profiles",
+            ":githubId"
+          ],
+          "variable": [
+            {
+              "key": "githubId",
+              "value": "1024025"
+            }
+          ]
+        },
+        "description": "Deletes a profile and its associated insights from the database."
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "API_KEY",
+      "value": "fa82efa9bc7e4f5a8a5664084b84852586760b76fdbb52d2660fb85a96ddec53",
+      "type": "string"
+    }
+  ]
+}

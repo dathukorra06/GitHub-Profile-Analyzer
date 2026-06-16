@@ -1,0 +1,19 @@
+{
+  "name": "github-profile-analyzer-monorepo",
+  "version": "1.0.0",
+  "description": "Monorepo containing the API Service and Web Client for GitHub Profile Analyzer",
+  "private": true,
+  "scripts": {
+    "start": "concurrently \"npm run start:api\" \"npm run start:web\"",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "install:all": "npm install && cd analyzer-api-service && npm install && cd ../analyzer-web-client && npm install",
+    "start:api": "cd analyzer-api-service && npm start",
+    "dev:api": "cd analyzer-api-service && npm run dev",
+    "test:api": "cd analyzer-api-service && npm test",
+    "start:web": "cd analyzer-web-client && npm run preview",
+    "dev:web": "cd analyzer-web-client && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

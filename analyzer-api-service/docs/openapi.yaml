@@ -1,0 +1,602 @@
+openapi: "3.0.0"
+
+info:
+  title: GitHub Profile Analyzer API
+  version: "1.0.0"
+  description: |
+    A production-ready REST API for fetching, analyzing, and persisting
+    GitHub user profile data and computed insights into a MySQL database.
+
+    ## Authentication
+    All `/api/*` endpoints require an API key sent as the `X-API-Key` header.
+
+    ## Rate Limiting
+    - Global: 100 requests per 15 minutes per IP
+    - Analyze endpoint: 20 requests per 15 minutes per IP
+
+    ## Error Format
+    All errors follow the format:
+    ```json
+    { "success": false, "message": "...", "errors": [] }
+    ```
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local Development
+  - url: https://your-production-domain.com
+    description: Production
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for all protected endpoints
+
+  schemas:
+    Profile:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        githubId:
+          type: integer
+          example: 1296269
+        username:
+          type: string
+          example: octocat
+        displayName:
+          type: string
+          nullable: true
+          example: The Octocat
+        bio:
+          type: string
+          nullable: true
+          example: GitHub mascot
+        location:
+          type: string
+          nullable: true
+          example: San Francisco, CA
+        company:
+          type: string
+          nullable: true
+          example: "@github"
+        blog:
+          type: string
+          nullable: true
+          example: https://github.blog
+        profileUrl:
+          type: string
+          format: uri
+          example: https://github.com/octocat
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: https://avatars.githubusercontent.com/u/583231
+        accountCreationDate:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2011-01-25T18:44:36Z"
+        lastAnalyzedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProfileInsight:
+      type: object
+      properties:
+        id:
+          type: integer
+        githubId:
+          type: integer
+          example: 1296269
+        publicRepositoryCount:
+          type: integer
+          example: 8
+        followerCount:
+          type: integer
+          example: 15000
+        followingCount:
+          type: integer
+          example: 9
+        totalStarsEarned:
+          type: integer
+          example: 11800
+        totalForksReceived:
+          type: integer
+          example: 130400
+        topProgrammingLanguage:
+          type: string
+          nullable: true
+          example: JavaScript
+        averageRepositoryAgeDays:
+          type: number
+          format: float
+          nullable: true
+          example: 487.23
+        mostActiveCommitYear:
+          type: integer
+          nullable: true
+          example: 2023
+        languageDistribution:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            JavaScript: 5
+            Python: 3
+            HTML: 1
+        topicDistribution:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            api: 3
+            react: 2
+        hasReadmeCount:
+          type: integer
+          example: 7
+        forkRatio:
+          type: number
+          format: float
+          nullable: true
+          example: 0.125
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProfileWithInsight:
+      allOf:
+        - $ref: '#/components/schemas/Profile'
+        - type: object
+          properties:
+            insight:
+              $ref: '#/components/schemas/ProfileInsight'
+
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 42
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        totalPages:
+          type: integer
+          example: 5
+        hasNextPage:
+          type: boolean
+          example: true
+        hasPreviousPage:
+          type: boolean
+          example: false
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+              value:
+                type: string
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Authentication required. Provide a valid X-API-Key header.
+
+    Forbidden:
+      description: Invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Profile with GitHub ID '9999' not found in database
+
+    RateLimited:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Too many requests. Please try again later.
+            retryAfter: 900
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns service health and database connectivity status
+      tags:
+        - Health
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: string
+                    enum: [healthy, degraded]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                  services:
+                    type: object
+                    properties:
+                      database:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                            enum: [ok, error]
+                          latencyMs:
+                            type: integer
+        "503":
+          description: Service is degraded (database unreachable)
+
+  /api/profiles/analyze:
+    post:
+      summary: Analyze a GitHub user profile
+      description: |
+        Accepts a GitHub username, fetches all public profile and repository
+        data from the GitHub API, computes insights, and persists everything
+        to the database. Returns 201 for new profiles, 200 for re-analyses.
+      tags:
+        - Profiles
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+              properties:
+                username:
+                  type: string
+                  minLength: 1
+                  maxLength: 39
+                  pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$'
+                  example: torvalds
+            example:
+              username: torvalds
+      responses:
+        "201":
+          description: New profile analyzed and saved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          profile:
+                            $ref: '#/components/schemas/Profile'
+                          insight:
+                            $ref: '#/components/schemas/ProfileInsight'
+        "200":
+          description: Existing profile re-analyzed and updated
+        "400":
+          $ref: '#/components/responses/ValidationError'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          description: GitHub username does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "429":
+          $ref: '#/components/responses/RateLimited'
+        "500":
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/profiles:
+    get:
+      summary: List analyzed profiles
+      description: |
+        Returns a paginated list of all stored profiles with optional filtering
+        by programming language, follower count range, account creation date,
+        and sorting options.
+      tags:
+        - Profiles
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (1-indexed)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Records per page (max 100)
+        - name: language
+          in: query
+          schema:
+            type: string
+          description: Filter by top programming language (e.g. JavaScript)
+          example: Python
+        - name: minFollowers
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: Minimum follower count
+        - name: maxFollowers
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: Maximum follower count
+        - name: createdAfter
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter profiles created after this date (ISO 8601)
+          example: "2015-01-01"
+        - name: createdBefore
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter profiles created before this date (ISO 8601)
+          example: "2023-12-31"
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum:
+              - lastAnalyzedAt
+              - followerCount
+              - totalStarsEarned
+              - accountCreationDate
+            default: lastAnalyzedAt
+          description: Column to sort by
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [ASC, DESC]
+            default: DESC
+          description: Sort direction
+      responses:
+        "200":
+          description: Paginated profiles list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileWithInsight'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        "400":
+          $ref: '#/components/responses/ValidationError'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "429":
+          $ref: '#/components/responses/RateLimited'
+
+  /api/profiles/{githubId}:
+    get:
+      summary: Get profile by GitHub ID
+      description: Retrieves the full profile data and all computed insights for a single profile.
+      tags:
+        - Profiles
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: githubId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: GitHub numeric user ID
+          example: 1296269
+      responses:
+        "200":
+          description: Profile and insights
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/ProfileWithInsight'
+        "400":
+          $ref: '#/components/responses/ValidationError'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete a profile
+      description: |
+        Permanently removes a profile and all its associated insights from the database.
+        The CASCADE constraint ensures insight cleanup is automatic.
+      tags:
+        - Profiles
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: githubId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1296269
+      responses:
+        "204":
+          description: Profile deleted successfully (no body)
+        "400":
+          $ref: '#/components/responses/ValidationError'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /api/profiles/{githubId}/refresh:
+    put:
+      summary: Refresh a profile with latest GitHub data
+      description: |
+        Invalidates the cache for the given user and re-fetches all data from GitHub,
+        recomputing all insights and updating the database record.
+      tags:
+        - Profiles
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: githubId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1296269
+      responses:
+        "200":
+          description: Profile refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      profile:
+                        $ref: '#/components/schemas/Profile'
+                      insight:
+                        $ref: '#/components/schemas/ProfileInsight'
+        "400":
+          $ref: '#/components/responses/ValidationError'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "429":
+          $ref: '#/components/responses/RateLimited'
+
+tags:
+  - name: Health
+    description: Service health and readiness
+  - name: Profiles
+    description: GitHub profile analysis and storage operations
