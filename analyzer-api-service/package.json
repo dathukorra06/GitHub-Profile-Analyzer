@@ -1,7 +1,7 @@
 {
   "name": "github-profile-analyzer",
   "version": "1.0.0",
-  "description": "Production-ready REST API for analyzing GitHub user profiles with MySQL persistence",
+  "description": "Production-ready REST API for analyzing GitHub user profiles with PostgreSQL persistence",
   "main": "server.js",
   "engines": {
     "node": ">=18.0.0"
@@ -21,7 +21,7 @@
     "api",
     "nodejs",
     "express",
-    "mysql"
+    "postgresql"
   ],
   "author": "",
   "license": "MIT",
@@ -36,7 +36,8 @@
     "helmet": "^7.1.0",
     "lru-cache": "^10.2.0",
     "morgan": "^1.10.0",
-    "mysql2": "^3.6.0",
+    "pg": "^8.13.0",
+    "pg-hstore": "^2.3.4",
     "sequelize": "^6.36.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",

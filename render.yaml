@@ -1,3 +1,10 @@
+databases:
+  - name: github-analyzer-db
+    plan: free
+    databaseName: github_analyzer
+    user: analyzer_user
+    postgresMajorVersion: "15"
+
 services:
   - type: web
     name: github-profile-analyzer-api
@@ -6,11 +13,16 @@ services:
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
+    plan: free
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: github-analyzer-db
+          property: connectionString
       - key: CORS_ORIGIN
         value: '*'
       - key: API_SECRET_KEY
@@ -19,11 +31,6 @@ services:
         sync: false
         # Set your GitHub PAT in the Render dashboard
         # https://github.com/settings/tokens (no scopes needed for public data)
-      - key: DATABASE_URL
-        sync: false
-        # Provide your external MySQL 8 connection string in the Render dashboard:
-        # Format: mysql://USER:PASSWORD@HOST:PORT/DBNAME
-        # Free MySQL providers: Railway (railway.app), Aiven (aiven.io), TiDB Serverless
       - key: LOG_LEVEL
         value: info
       - key: RATE_LIMIT_WINDOW_MS
